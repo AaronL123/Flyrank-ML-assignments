@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Ranking Content for Refresh: A Decision-Support Model on 78.8M Search Records</title>
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;0,8..60,700;1,8..60,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fafaf8;
+  --surface: #ffffff;
+  --text: #1a1a1a;
+  --text-secondary: #555;
+  --accent: #2d6a4f;
+  --accent-light: #e8f0ec;
+  --border: #ddd;
+  --code-bg: #f3f3f0;
+  --metric-bg: #2d6a4f;
+  --metric-text: #fff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141414;
+    --surface: #1e1e1e;
+    --text: #e0e0e0;
+    --text-secondary: #999;
+    --accent: #52b788;
+    --accent-light: #1a2e24;
+    --border: #333;
+    --code-bg: #252525;
+    --metric-bg: #52b788;
+    --metric-text: #111;
+  }
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-padding-top: env(safe-area-inset-top, 0); }
+body {
+  font-family: 'Source Serif 4', Georgia, serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.7;
+  padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+}
+.container {
+  max-width: 720px;
+  margin: 0 auto;
+  padding: 3rem 1.5rem 4rem;
+}
+h1 {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 0.5rem;
+  letter-spacing: -0.02em;
+}
+.subtitle {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  margin-bottom: 2.5rem;
+  line-height: 1.5;
+}
+.subtitle a { color: var(--accent); text-decoration: none; }
+.subtitle a:hover { text-decoration: underline; }
+h2 {
+  font-size: 1.3rem;
+  font-weight: 600;
+  margin: 2.8rem 0 0.8rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid var(--border);
+}
+h2:first-of-type { margin-top: 0; }
+h3 {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 1.5rem 0 0.4rem;
+}
+p { margin-bottom: 1rem; }
+strong { font-weight: 600; }
+em { font-style: italic; }
+code {
+  font-family: 'SF Mono', 'Fira Code', monospace;
+  font-size: 0.82em;
+  background: var(--code-bg);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
+}
+ul, ol { margin: 0 0 1rem 1.4rem; }
+li { margin-bottom: 0.35rem; }
+
+.abstract {
+  background: var(--accent-light);
+  border-left: 3px solid var(--accent);
+  padding: 1.2rem 1.4rem;
+  margin-bottom: 2rem;
+  border-radius: 0 4px 4px 0;
+  font-size: 0.95rem;
+}
+
+.metrics-row {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin: 1.5rem 0;
+}
+.metric-card {
+  background: var(--metric-bg);
+  color: var(--metric-text);
+  padding: 1rem 1.2rem;
+  border-radius: 6px;
+  flex: 1;
+  min-width: 140px;
+  text-align: center;
+}
+.metric-card .number {
+  font-size: 1.8rem;
+  font-weight: 700;
+  display: block;
+  line-height: 1.2;
+}
+.metric-card .label {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.72rem;
+  opacity: 0.85;
+  display: block;
+  margin-top: 0.2rem;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.88rem;
+  font-family: 'Inter', sans-serif;
+}
+th {
+  text-align: left;
+  font-weight: 600;
+  padding: 0.5rem 0.6rem;
+  border-bottom: 2px solid var(--border);
+  font-size: 0.82rem;
+}
+td {
+  padding: 0.45rem 0.6rem;
+  border-bottom: 1px solid var(--border);
+  vertical-align: top;
+}
+tr:last-child td { border-bottom: none; }
+
+.chart-container {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1rem;
+  margin: 1.5rem 0;
+  text-align: center;
+}
+.chart-container svg { max-width: 100%; height: auto; }
+.chart-caption {
+  font-family: 'Inter', sans-serif;
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.5rem;
+}
+
+.footer {
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+  font-family: 'Inter', sans-serif;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
+.footer a { color: var(--accent); text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+
+@media (max-width: 600px) {
+  .container { padding: 2rem 1rem 3rem; }
+  .metrics-row { flex-direction: column; }
+  table { font-size: 0.8rem; }
+  td, th { padding: 0.35rem 0.4rem; }
+}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Ranking Content for Refresh: A Decision-Support Model on 78.8M Search Records</h1>
+<div class="subtitle">
+  Lane 2 — Refresh / Content Opportunity Scoring<br>
+  FlyRank ML Internship, Track 04 · March 2026 data · <a href="https://github.com/AaronL123/Flyrank-ML-assignments">Repository</a>
+</div>
+
+<div class="abstract">
+<strong>Abstract.</strong> Which pages should a content reviewer open first? We studied 36,290 content items from 36 clients in the FlyRank ML Internship Warehouse (March 2026, 9.8 million daily performance rows), building a four-feature Random Forest that ranks pages by short-term decline risk. Under a client-grouped 70/30 validation split, the model achieved precision@50&nbsp;=&nbsp;0.760 against a test base rate of 0.477, outperforming both a hand-written rule baseline (0.520) and Logistic Regression (0.480). The output is a ranked review queue with reason codes — decision-support for a human reviewer, not an automated action system.
+</div>
+
+<div class="metrics-row">
+  <div class="metric-card"><span class="number">0.760</span><span class="label">precision@50 (model)</span></div>
+  <div class="metric-card"><span class="number">0.520</span><span class="label">precision@50 (baseline)</span></div>
+  <div class="metric-card"><span class="number">0.477</span><span class="label">base rate (random)</span></div>
+  <div class="metric-card"><span class="number">36,290</span><span class="label">pages scored</span></div>
+</div>
+
+<h2>1. Problem &amp; Research Question</h2>
+
+<p><strong>Research question:</strong> Which published content items should a capacity-limited reviewer prioritise for refresh, ranked from observable search and engagement signals, and does a learned ranking beat a transparent rule baseline at precision@K?</p>
+
+<p><strong>The decision:</strong> out of tens of thousands of pages, which handful does a reviewer open first when they can check roughly 50 per cycle.</p>
+
+<p><strong>Unit of analysis:</strong> one content item, for one client, aggregated from daily search performance records over a 21-day feature window.</p>
+
+<p><strong>Output:</strong> a ranked review queue with a reason code on every page — <code>weak_position_high_demand</code> (refresh), <code>low_ctr_good_position</code> (optimize title/meta), or <code>thin_engagement</code> (review manually).</p>
+
+<p><strong>Cost of a wrong call:</strong> a false positive wastes a reviewer's limited capacity on a page that was fine. A false negative lets a genuinely declining page bleed traffic unnoticed. Reviewer capacity is the binding constraint, so false positives are the more expensive error, and precision@K is the metric that matches.</p>
+
+<p><strong>Why ML helps:</strong> the hand-written "declining with demand" flag fires on 43.8% of pages in the starter slice — 13,152 of 30,000. Against a capacity of ~50, a flag that fires 13,152 times gives a reviewer no ordering. Every single-signal sort (position, CTR, impressions, word count) scores at or below the base rate at precision@50. If signal exists, it lives in combinations a threshold can't express.</p>
+
+<h2>2. Data</h2>
+
+<p><strong>Source:</strong> FlyRank ML Internship Warehouse (<code>FlyRank/internship-warehouse</code> on Hugging Face), a gated, anonymized release of real production search and engagement data under the FlyRank Internship Data Use Terms.</p>
+
+<p><strong>Scale:</strong> 104 clients, ~520,000 content items, 78.8 million daily performance rows spanning 2025-01-27 to 2026-06-30.</p>
+
+<p><strong>Tables used:</strong></p>
+<ul>
+  <li><code>fact_content_daily_performance</code> — daily search and engagement metrics per page per client</li>
+  <li><code>dim_content</code> — static page attributes (word count, content type, intent, dates)</li>
+  <li><code>dim_clients</code> — client metadata and data-availability dates</li>
+</ul>
+
+<p><strong>Development month:</strong> <code>month=2026-03</code> (9,841,378 rows). The final month (June 2026) was deliberately left sealed — it is the natural outcome window for any past→future label.</p>
+
+<h3>What was excluded and why</h3>
+<table>
+  <tr><th>Excluded</th><th>Reason</th></tr>
+  <tr><td><code>trend_direction</code>, <code>trend_pct</code></td><td>Label-derived — they produce the starter proxy; using them as features would be circular</td></tr>
+  <tr><td><code>optimization_eligible_date</code></td><td>A product-rule output — learning from it means learning the rule the model is trying to beat</td></tr>
+  <tr><td><code>is_deleted</code></td><td>Reflects a decision already taken; deleted pages aren't review candidates</td></tr>
+  <tr><td><code>provider_used</code>, <code>model_used</code></td><td>Internal pipeline detail, not page performance</td></tr>
+  <tr><td><code>last_optimized_date</code></td><td>Signal check returned FALSE — 100% of non-null values fall <em>after</em> the decision moment; forward-looking, not a refresh record</td></tr>
+  <tr><td><code>client_hash_id</code>, <code>content_hash_id</code></td><td>Salted pseudonyms — joining and splitting only, never features</td></tr>
+  <tr><td>AI-referral columns</td><td>0.056% coverage in March — too sparse for features</td></tr>
+</table>
+
+<p><strong>Availability filter:</strong> every query filters on <code>gsc_data_available IS TRUE</code>. Only 36.7% of March rows have GSC data; the rest represent clients without a Search Console connection, not pages without traffic. GA4 coverage is 4.2%.</p>
+
+<p><strong>Public safety:</strong> no client names, URLs, domains, or private queries appear anywhere in the repo or this report. All identifiers are salted pseudonymous hashes.</p>
+
+<h2>3. Methodology</h2>
+
+<p><strong>Assumptions.</strong> A page's near-term click trajectory can be estimated from its recent search visibility and engagement patterns. The model's job is to order a queue, not to diagnose why a page is declining.</p>
+
+<h3>Features</h3>
+<p>Four features, all from the 21-day feature window:</p>
+<table>
+  <tr><th>Feature</th><th>What it measures</th></tr>
+  <tr><td><code>impressions_21d</code></td><td>Search demand — how often the page appeared in results</td></tr>
+  <tr><td><code>avg_position_21d</code></td><td>Ranking quality — where it appeared (zeros excluded: <code>gsc_avg_position = 0</code> means no data)</td></tr>
+  <tr><td><code>ctr_21d</code></td><td>Click capture — what fraction of impressions converted to clicks</td></tr>
+  <tr><td><code>days_observed</code></td><td>Measurement density — how many of the 21 days had GSC data</td></tr>
+</table>
+
+<p><code>clicks_21d</code> was originally a fifth feature (42.4% importance), but the ML-09 train-without audit found removing it <em>improved</em> precision@50 from 0.680 to 0.760. It was redundant with <code>impressions_21d</code> and <code>ctr_21d</code>, adding noise rather than signal.</p>
+
+<h3>Label definition</h3>
+<p><code>is_declining = 1</code> when the daily click rate in the outcome window (days 22–31) falls below the daily click rate in the feature window (days 1–21). This is a proxy for short-term momentum loss. Both <code>clicks_21d &gt; 0</code> and <code>clicks_out &gt; 0</code> guards are applied — the label is undefined by construction outside this region.</p>
+
+<h3>Baseline</h3>
+<p>A hand-written rule scoring <code>impressions_21d</code>, <code>avg_position_21d</code>, and <code>ctr_21d</code> with fixed percentile-rank weights (0.3, 0.3, 0.4), three reason codes, and a deterministic tiebreak. Built in ML-07; precision@50&nbsp;=&nbsp;0.520 on the test split.</p>
+
+<h3>Model</h3>
+<p>Random Forest (200 trees, min_samples_leaf=20, seed=42). Chosen over Logistic Regression because the ML-07 top-10 review showed the baseline's weakness was an inability to capture feature interactions — pages with identical position and CTR levels could be declining or stable, and only combinations distinguish them.</p>
+
+<h3>Validation design</h3>
+<p><code>GroupShuffleSplit</code> by <code>client_hash_id</code>, 70/30, seed 42. Test clients never appear in training. ML-09 confirmed the grouped split outperforms a random split (0.720 vs 0.640 at precision@50), ruling out client memorisation as an inflation source.</p>
+
+<h3>Leakage checks</h3>
+<ul>
+  <li><strong>ML-04:</strong> planted <code>clicks_out</code> deliberately → ROC-AUC jumped from 0.630 to 0.999 → removed</li>
+  <li><strong>ML-08:</strong> first run scored precision@20 = 1.000 → diagnosed zero-outcome-click pages (39.2%) automatically satisfying the label → restricted to <code>clicks_out &gt; 0</code></li>
+  <li><strong>ML-09:</strong> train-without on <code>clicks_21d</code> (42.4% importance) → removing it <em>improved</em> precision@50 → dropped for redundancy</li>
+  <li><strong>ML-09:</strong> full checklist — no product flags, no label-derived columns, no future-window features, population selection disclosed</li>
+</ul>
+
+<h2>4. Results</h2>
+
+<div class="chart-container">
+<svg viewBox="0 0 560 280" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Model vs baseline precision comparison">
+  <style>
+    .bar-label { font-family: 'Inter', sans-serif; font-size: 11px; fill: var(--text-secondary, #555); }
+    .bar-value { font-family: 'Inter', sans-serif; font-size: 12px; font-weight: 600; fill: var(--text, #1a1a1a); }
+    .axis-label { font-family: 'Inter', sans-serif; font-size: 10px; fill: var(--text-secondary, #555); }
+    .chart-title { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 600; fill: var(--text, #1a1a1a); }
+  </style>
+  <text x="280" y="20" text-anchor="middle" class="chart-title">Model vs baseline — same split, same metric</text>
+  <!-- Base rate line -->
+  <line x1="70" y1="38" x2="70" y2="230" stroke="#ddd" stroke-width="1"/>
+  <line x1="70" y1="230" x2="530" y2="230" stroke="#ddd" stroke-width="1"/>
+  <!-- Scale: 0 to 1.0, width 460px from x=70 to x=530 -->
+  <!-- Base rate at 0.477 = 219.4px -->
+  <line x1="289" y1="38" x2="289" y2="230" stroke="#999" stroke-width="1" stroke-dasharray="4,3"/>
+  <text x="289" y="248" text-anchor="middle" class="axis-label">base rate 0.477</text>
+
+  <!-- Row 1: Rule baseline p@20=0.350, p@50=0.520 -->
+  <text x="65" y="72" text-anchor="end" class="bar-label">Rule baseline</text>
+  <rect x="70" y="55" width="161" height="14" rx="2" fill="#b0c4b1" opacity="0.7"/>
+  <text x="236" y="66" class="bar-value" fill="#555">0.350</text>
+  <rect x="70" y="72" width="239" height="14" rx="2" fill="#6b9e7a"/>
+  <text x="314" y="83" class="bar-value">0.520</text>
+
+  <!-- Row 2: Logistic Regression p@20=0.550, p@50=0.480 -->
+  <text x="65" y="122" text-anchor="end" class="bar-label">Logistic Reg.</text>
+  <rect x="70" y="105" width="253" height="14" rx="2" fill="#b0c4b1" opacity="0.7"/>
+  <text x="328" y="116" class="bar-value" fill="#555">0.550</text>
+  <rect x="70" y="122" width="221" height="14" rx="2" fill="#6b9e7a"/>
+  <text x="296" y="133" class="bar-value">0.480</text>
+
+  <!-- Row 3: Random Forest p@20=0.750, p@50=0.760 -->
+  <text x="65" y="172" text-anchor="end" class="bar-label">Random Forest</text>
+  <rect x="70" y="155" width="345" height="14" rx="2" fill="#c9dbc9" opacity="0.7"/>
+  <text x="420" y="166" class="bar-value" fill="#555">0.750</text>
+  <rect x="70" y="172" width="350" height="14" rx="2" fill="#2d6a4f"/>
+  <text x="425" y="183" class="bar-value" style="fill: var(--text)">0.760</text>
+
+  <!-- Legend -->
+  <rect x="70" y="210" width="10" height="10" rx="1" fill="#b0c4b1" opacity="0.7"/>
+  <text x="84" y="219" class="axis-label">precision@20</text>
+  <rect x="170" y="210" width="10" height="10" rx="1" fill="#2d6a4f"/>
+  <text x="184" y="219" class="axis-label">precision@50</text>
+</svg>
+<div class="chart-caption">Random Forest outperforms the baseline at both K. Dashed line marks the test base rate (0.477) — the score from picking 50 pages at random.</div>
+</div>
+
+<p>Random Forest (4 features) clearly beats the baseline and base rate at both K. Precision@50&nbsp;=&nbsp;0.760 against a base rate of 0.477 and a rule baseline of 0.520. The model surfaces pages worth reviewing 59% more often than random and 46% more often than the hand-written rule.</p>
+
+<p>Logistic Regression performs inconsistently — 0.550 at K=20 but drops to 0.480 at K=50, below base rate. The linear model cannot capture the feature interactions that separate declining from stable pages.</p>
+
+<h3>Feature importances</h3>
+
+<div class="chart-container">
+<svg viewBox="0 0 480 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Feature importance bar chart">
+  <style>
+    .fi-label { font-family: 'Inter', sans-serif; font-size: 11px; fill: var(--text, #1a1a1a); }
+    .fi-value { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; fill: var(--text, #1a1a1a); }
+  </style>
+  <!-- ctr_21d: 0.424 -->
+  <text x="115" y="30" text-anchor="end" class="fi-label">ctr_21d</text>
+  <rect x="120" y="18" width="283" height="18" rx="2" fill="#2d6a4f"/>
+  <text x="408" y="32" class="fi-value">42.4%</text>
+  <!-- impressions_21d: 0.406 -->
+  <text x="115" y="62" text-anchor="end" class="fi-label">impressions_21d</text>
+  <rect x="120" y="50" width="271" height="18" rx="2" fill="#40916c"/>
+  <text x="396" y="64" class="fi-value">40.6%</text>
+  <!-- avg_position_21d: 0.112 -->
+  <text x="115" y="94" text-anchor="end" class="fi-label">avg_position_21d</text>
+  <rect x="120" y="82" width="75" height="18" rx="2" fill="#74c69d"/>
+  <text x="200" y="96" class="fi-value">11.2%</text>
+  <!-- days_observed: 0.058 -->
+  <text x="115" y="126" text-anchor="end" class="fi-label">days_observed</text>
+  <rect x="120" y="114" width="39" height="18" rx="2" fill="#95d5b2"/>
+  <text x="164" y="128" class="fi-value">5.8%</text>
+</svg>
+<div class="chart-caption">Click capture efficiency and demand volume carry the model. Both are observable, both from the past window.</div>
+</div>
+
+<h3>Error analysis</h3>
+<p>5 of the top 20 picks were false positives (pages predicted to decline that didn't). All five had real outcome-window clicks, so these are misjudged degree rather than total misses. The shared error profile is pages with low CTR and moderate impressions that looked structurally weak but held steady — the "chronically weak vs actively declining" ambiguity that a 21-day snapshot cannot resolve.</p>
+
+<h2>5. Limitations</h2>
+
+<p><strong>The label is a proxy, not ground truth.</strong> "Did the daily click rate fall between days 1–21 and days 22–31" captures short-term momentum loss. It cannot distinguish genuine content decay from seasonality, a traffic spike ending, or normal noise.</p>
+
+<p><strong>59.3% of GSC-available pages are invisible to this model.</strong> The <code>clicks_21d &gt; 0</code> and <code>clicks_out &gt; 0</code> guards restrict the frame to 36,290 of ~89,000 pages with GSC data. Pages with zero clicks in either window are not scored and not safe to assume are healthy.</p>
+
+<p><strong>One month, one portfolio.</strong> Trained and validated on March 2026 only, across 36 clients. Seasonal patterns, algorithm updates, and client-specific campaigns are not represented.</p>
+
+<p><strong>Not causal.</strong> The model observes association between features and decline. It does not say that refreshing a flagged page will recover it. That claim requires a controlled experiment this data cannot support.</p>
+
+<p><strong>The population filter uses future information.</strong> <code>clicks_out &gt; 0</code> is an outcome-window condition. At decision time, you would not know whether a page will have outcome clicks. This filter is disclosed as a modeling convenience, not as something deployable without modification.</p>
+
+<p><strong>Availability ≠ zero traffic.</strong> Only 36.7% of March rows have GSC data. Absence of data usually means no Search Console connection, not no traffic.</p>
+
+<h2>6. Ranked Recommendations</h2>
+
+<table>
+  <tr><th>Priority</th><th>Reason code</th><th>Action</th><th>When to use</th></tr>
+  <tr><td>1</td><td><code>weak_position_high_demand</code></td><td><strong>Refresh</strong></td><td>Page has real demand but ranks outside top 10. The content isn't capturing the opportunity.</td></tr>
+  <tr><td>2</td><td><code>low_ctr_good_position</code></td><td><strong>Optimize title &amp; meta</strong></td><td>Page ranks well but converts poorly. The search snippet isn't compelling.</td></tr>
+  <tr><td>3</td><td><code>thin_engagement</code></td><td><strong>Review manually</strong></td><td>Impressions exist but clicks are very low. Could be targeting mismatch or cannibalisation.</td></tr>
+</table>
+
+<p><strong>Confidence and limits.</strong> This queue is decision-support for a human reviewer, not an automated action list. The model's precision@50 of 0.760 means roughly 3 in 4 of the top-50 pages are genuinely declining — but 1 in 4 is not, and the model cannot tell you which ones. The reason code narrows the diagnosis; the reviewer makes the call.</p>
+
+<p><strong>What <code>no_flag</code> means.</strong> Pages scored <code>no_flag</code> are not confirmed healthy. In ML-07, <code>no_flag</code> pages had the <em>highest</em> decline rate (80.0%) on the starter slice. Absence of a flag is not evidence of health.</p>
+
+<h2>7. Reproducibility</h2>
+
+<p><strong>Repository:</strong> <a href="https://github.com/AaronL123/Flyrank-ML-assignments">AaronL123/Flyrank-ML-assignments</a></p>
+
+<p><strong>Notebooks, in order:</strong></p>
+<ul>
+  <li><code>w01_research_question.ipynb</code> — lane choice and research question (ML-02)</li>
+  <li><code>w02_ml_task_framing.ipynb</code> — task type, target, metric (ML-03)</li>
+  <li><code>w03_data_contract.ipynb</code> — data contract, grain proof, five features, leak experiment (ML-04)</li>
+  <li><code>w04_baseline_score.ipynb</code> — signal checks, rule baseline, ranked queue (ML-07)</li>
+  <li><code>w05_model.ipynb</code> — RF vs LR vs baseline, second leakage fix (ML-08)</li>
+  <li><code>w06_validation_audit.ipynb</code> — grouped vs random split, train-without audit, claim rewrite (ML-09)</li>
+  <li><code>w07_action_playbook.ipynb</code> — action playbook, exports (ML-10)</li>
+  <li><code>capstone.ipynb</code> — capstone notebook (ML-11)</li>
+</ul>
+
+<p><strong>Seeds:</strong> <code>random_state=42</code> throughout. <strong>Environment:</strong> Google Colab, <code>duckdb</code>, <code>scikit-learn</code>, <code>pandas</code>, <code>matplotlib</code>.</p>
+
+<p><strong>Data access:</strong> <code>FlyRank/internship-warehouse</code> on Hugging Face (gated — request access, create a READ token, store as <code>HF_TOKEN</code> in Colab Secrets).</p>
+
+<div class="footer">
+  <p><strong>Acknowledgments &amp; data credit.</strong> Built on the <a href="https://flyrank.ai/">FlyRank ML Internship dataset</a>. Data provided under the FlyRank Internship Data Use Terms via <code>FlyRank/internship-warehouse</code> on Hugging Face.</p>
+</div>
+
+</div>
+</body>
+</html>
